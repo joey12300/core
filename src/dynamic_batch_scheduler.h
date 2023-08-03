@@ -118,7 +118,7 @@ class DynamicBatchScheduler : public Scheduler {
   void CustomBatchIncl(InferenceRequest* request, bool* should_include);
   // If custom batching is enabled for this model, initialize the batching
   // function.
-  void CustomBatchInit();
+  void CustomBatchInit(bool is_new_payload=false);
   // If custom batching is enabled for this model, finalizethe batching
   // function.
   void CustomBatchFini();

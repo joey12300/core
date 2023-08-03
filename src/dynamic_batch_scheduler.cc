@@ -281,7 +281,7 @@ DynamicBatchScheduler::NewPayload()
   curr_payload_ = model_->Server()->GetRateLimiter()->GetPayload(
       Payload::Operation::INFER_RUN, model_instance_);
   payload_saturated_ = false;
-  CustomBatchInit();
+  CustomBatchInit(true);
 }
 
 void
@@ -317,6 +317,7 @@ DynamicBatchScheduler::BatcherThread(const int nice)
   };
   const uint64_t default_wait_microseconds = 500 * 1000;
 
+  bool wait_for_payload_done = false;
   while (!scheduler_thread_exit_.load()) {
     NVTX_RANGE(nvtx_, "DynamicBatcher " + model_name_);
 
@@ -330,7 +331,12 @@ DynamicBatchScheduler::BatcherThread(const int nice)
       {
         std::lock_guard<std::mutex> exec_lock(*(curr_payload_->GetExecMutex()));
         auto payload_state = curr_payload_->GetState();
-        if (payload_saturated_ || IsStaleState(payload_state)) {
+	bool should_new_payload = payload_saturated_ || IsStaleState(payload_state);
+        if (wait_for_payload_done) {
+          should_new_payload = IsStaleState(payload_state);
+        }
+        // call NewPayload after curr_payload done
+        if (should_new_payload) {
           NewPayload();
           next_preferred_batch_size_ = 0;
         }
@@ -420,6 +426,7 @@ DynamicBatchScheduler::BatcherThread(const int nice)
         CustomBatchFini();
       }
       model_->Server()->GetRateLimiter()->EnqueuePayload(model_, curr_payload_);
+      wait_for_payload_done = true;
     }
 
     // Finish rejected requests if any
@@ -793,12 +800,12 @@ DynamicBatchScheduler::CustomBatchIncl(
 }
 
 void
-DynamicBatchScheduler::CustomBatchInit()
+DynamicBatchScheduler::CustomBatchInit(bool is_new_payload)
 {
   if (!CustomBatchEnabled())
     return;
   TRITONSERVER_Error* err = model_->ModelBatchInitFn()(
-      *model_->Batcher(), curr_payload_.get()->UserPointerAddr());
+      *model_->Batcher(), curr_payload_.get()->UserPointerAddr(), is_new_payload);
   if (err != nullptr) {
     LOG_ERROR << "Custom batching initialization function failed for model "
               << model_->Name() << ": " << TRITONSERVER_ErrorMessage(err);

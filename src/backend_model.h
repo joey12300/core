@@ -49,7 +49,7 @@ class TritonModel : public Model {
   typedef TRITONSERVER_Error* (*TritonModelBatchInclFn_t)(
       TRITONBACKEND_Request* request, void* userp, bool* should_include);
   typedef TRITONSERVER_Error* (*TritonModelBatchInitFn_t)(
-      TRITONBACKEND_Batcher* batcher, void** userp);
+      TRITONBACKEND_Batcher* batcher, void** userp, bool is_new_payload);
   typedef TRITONSERVER_Error* (*TritonModelBatchFiniFn_t)(void* userp);
   typedef TRITONSERVER_Error* (*TritonModelBatcherInitFn_t)(
       TRITONBACKEND_Batcher** batcher, TRITONBACKEND_Model* model);
