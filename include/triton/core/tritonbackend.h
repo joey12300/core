@@ -1529,7 +1529,7 @@ TRITONBACKEND_ISPEC TRITONSERVER_Error* TRITONBACKEND_ModelBatchIncludeRequest(
 /// about this pending batch.
 /// \return a TRITONSERVER_Error indicating success or failure.
 TRITONBACKEND_ISPEC TRITONSERVER_Error* TRITONBACKEND_ModelBatchInitialize(
-    const TRITONBACKEND_Batcher* batcher, void** userp);
+    const TRITONBACKEND_Batcher* batcher, void** userp, bool is_new_payload);
 
 /// Callback to be invoked when Triton has finishing forming a batch.
 ///
